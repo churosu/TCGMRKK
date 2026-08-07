@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>企画部カードゲーム</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- タイトル -->
+  <section class="screen menu on" id="screenTitle">
+    <div class="menuInner">
+      <div class="logo"><h1>企画部カードゲーム</h1><div class="en">CARD BATTLE</div></div>
+      <div><p class="field-lab">プレイヤー名</p><input class="tin" id="nameInput" maxlength="16" placeholder="名前を入力"></div>
+      <div class="deckpick"><div class="cmini" id="titleCover" style="height:52px;aspect-ratio:296/460;border-radius:7px;overflow:hidden;flex:0 0 auto;display:none"></div><div class="info"><b id="deckPickName">デッキ未選択</b><small id="deckPickSub">タップして選択</small></div><button class="chg" id="toDeck">デッキ選択</button></div>
+      <button class="bigbtn primary" id="toCpu"><span class="ic">🤖</span><span class="tx">CPU戦（ひとりで対戦）<small>コンピュータと対戦</small></span></button>
+      <button class="bigbtn" id="toRoom"><span class="ic">🔗</span><span class="tx">ルームコードで対戦<small>マルチプレイ</small></span></button>
+    </div>
+  </section>
+
+  <!-- デッキ選択 -->
+  <section class="screen menu" id="screenDeckSelect">
+    <button class="backbtn" id="dsBack">← タイトルに戻る</button>
+    <div class="menuInner">
+      <div class="logo"><h1>デッキ選択</h1></div>
+      <button class="bigbtn" id="toSaved"><span class="ic">📚</span><span class="tx">保存済みデッキ一覧<small>保存したデッキから選ぶ</small></span></button>
+      <button class="bigbtn primary" id="toNew"><span class="ic">＋</span><span class="tx">新規作成<small>パッケージを選んで構築</small></span></button>
+    </div>
+  </section>
+
+  <!-- 保存済み -->
+  <section class="screen menu" id="screenSaved">
+    <button class="backbtn" id="svBack">← タイトルに戻る</button>
+    <div class="menuInner">
+      <div class="logo"><h1>保存済みデッキ</h1></div>
+      <div class="savedBig" id="savedListBig"></div>
+    </div>
+  </section>
+
+  <!-- 構築 -->
+  <section class="screen" id="screenDeck">
+    <div class="deckhead">
+      <button class="backbtn" id="deckBack" style="position:static">← タイトルに戻る</button>
+      <h2 id="deckHeadName">デッキ構築</h2>
+      <div class="dtotal" id="dTotal">0 / 20–22</div>
+    </div>
+    <div class="dbody">
+      <div class="dlistwrap">
+        <div class="dcats" id="dCats"></div>
+        <div class="dsearch">
+          <div class="dsearch-t">検索（2つまで・AND）</div>
+          <div class="frow" data-i="0"></div>
+          <div class="frow" data-i="1"></div>
+          <button class="db" id="searchClear" style="align-self:flex-start">検索をクリア</button>
+        </div>
+        <div class="dlist" id="deckList"></div>
+      </div>
+      <div class="dside">
+        <div class="dsec"><div class="dsec-t">パッケージカード（表紙）</div>
+          <div class="coverbox" id="coverBox"><div class="empty">デッキ内のカードの「表紙に設定」で指定</div></div>
+        </div>
+        <div class="dsec"><div class="dsec-t">コードから読み込む / 共有</div>
+          <input class="dcode" id="codeField" placeholder="デッキコード" spellcheck="false">
+          <div class="dbtns"><button class="db" id="codeApply">コード適用</button><button class="db" id="codeCopy">コピー</button><button class="db" id="urlCopy">URLをコピー</button></div>
+        </div>
+        <div class="dsec"><div class="dsec-t">カード画像（テスト）</div>
+          <button class="db file">画像を読み込む<input type="file" id="imgInput" accept="image/png,image/jpeg" multiple></button>
+          <div class="note" style="margin-top:6px">選んだ画像を順にカードへ割り当てます。</div>
+        </div>
+      </div>
+    </div>
+    <div class="dfoot">
+      <button class="db warn" id="deckClear">全クリア</button>
+      <input class="dname" id="deckName" placeholder="デッキ名" maxlength="20">
+      <button class="db" id="deckSave">保存</button>
+      <button class="db go" id="deckUse">このデッキで決定</button>
+    </div>
+  </section>
+
+  <!-- ルーム -->
+  <section class="screen menu" id="screenRoom">
+    <button class="backbtn" id="roomBack">← タイトルに戻る</button>
+    <div class="menuInner">
+      <div class="logo"><h1>マルチプレイ</h1><div class="en">ROOM</div></div>
+      <div><p class="field-lab">ルームコード</p><input class="tin num" id="roomInput" maxlength="8" placeholder="例: 4KX9" style="text-transform:uppercase; letter-spacing:.2em"></div>
+      <button class="bigbtn primary" id="roomJoin"><span class="ic">▶</span><span class="tx">このコードで対戦を開始<small>入力したコードのルームへ</small></span></button>
+      <button class="bigbtn" id="roomCreate"><span class="ic">＋</span><span class="tx">新しいルームを作成<small>コードを自動生成</small></span></button>
+      <div id="lobby" class="lobby" style="display:none">
+        <div class="lobbycode">ルームコード：<b id="lobbyCode">----</b></div>
+        <div id="lobbyStatus" class="note">…</div>
+        <div id="lobbyList" class="lobbylist"></div>
+        <button class="bigbtn primary" id="lobbyStart" style="display:none"><span class="ic">▶</span><span class="tx">対戦を開始<small>オーナーのみ</small></span></button>
+      </div>
+      <p class="note">※ P2Pはブラウザ間で直接通信します（作成→コード共有→参加）。オーナーが対戦者/観戦者を割り当てて開始。現在は「ホストが進行し、全員がライブ観戦＋手札閲覧（プレイヤー名をタップ）」まで対応。各自の遠隔操作は次段で追加予定。</p>
+    </div>
+  </section>
+
+  <!-- 対戦 -->
+  <section class="screen" id="screenGame">
+    <div id="fireEdge"></div>
+    <div id="spCard"></div>
+    <div class="toolbar">
+      <div class="brand"><b id="roomTag">企画部カードゲーム</b></div>
+      <button class="tbtn" id="toTitle">退出</button>
+    </div>
+    <div class="table">
+      <div class="strip" id="stripOpp">
+        <div class="who"><span class="dot"></span><b id="oppName">相手</b></div>
+        <div class="life" id="oppLife"><span class="lab">LIFE</span><span class="val num">6</span><div class="pips"></div></div>
+        <span class="flag" id="oppFlag">強制ATK</span>
+        <div class="counts"><span>手<b class="hcount">0</b></span><span>山<b class="dcount">0</b></span><span>墓<b class="gcount">0</b></span></div>
+        <div class="sbtns" id="sbtnsOpp"></div>
+      </div>
+      <div class="row opphand" id="oppHand"></div>
+      <div class="row field"><div class="matbg" id="oppMat"></div><div class="pilewrap" id="oppZoneL"></div><div class="slots" id="oppSlots"></div><div class="pilewrap" id="oppZoneR"></div></div>
+      <div class="rail">
+        <div class="turn"><span class="lab">TURN</span><span class="val num" id="turnNo">1</span></div>
+        <div class="phchip" id="phChip">メイン</div>
+        <div class="actor">手番 <b id="actorName">あなた</b></div>
+        <div class="acts"><button class="ghost" id="logBtn">ログ</button><button class="ghost" id="stalemateBtn">膠着判定</button><button class="endbtn" id="endBtn">ターンエンド</button></div>
+      </div>
+      <div class="row field"><div class="matbg" id="selfMat"></div><div class="pilewrap" id="selfZoneL"></div><div class="slots" id="selfSlots"></div><div class="pilewrap" id="selfZoneR"></div></div>
+      <div class="row hand" id="selfHand"></div>
+      <div class="strip active" id="stripSelf">
+        <div class="who"><span class="dot"></span><b id="selfName">あなた</b></div>
+        <div class="life" id="selfLife"><span class="lab">LIFE</span><span class="val num">6</span><div class="pips"></div></div>
+        <span class="flag" id="selfFlag">強制ATK</span>
+        <div class="counts"><span>手<b class="hcount">0</b></span><span>山<b class="dcount">0</b></span><span>墓<b class="gcount">0</b></span></div>
+        <div class="sbtns" id="sbtnsSelf"></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="prompt" id="prompt"><div class="msg" id="promptMsg"></div><div id="promptActs" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center"></div></div>
+
+<div id="pickOv"><div class="wrap"><div class="plab">DRAW</div><div class="pk" id="pickCard"></div></div></div>
+
+<div class="diceov" id="diceOv"><div class="dicewrap">
+  <div class="dicetitle" id="diceTitle">DICE</div>
+  <div class="dicerow" id="diceRow"></div>
+  <div class="diceres" id="diceRes"></div>
+</div></div>
+<div class="fxpop" id="fxpop"></div>
+<button id="sndBtn" class="sndbtn" title="サウンド設定">🔊</button>
+<div id="ytplayer" style="position:fixed;left:-9999px;top:0;width:1px;height:1px"></div>
+<div id="sndPanel" class="sndpanel">
+  <div class="sndttl">サウンド設定</div>
+  <div class="sndrow"><span>効果音</span><button id="sfxToggle" class="sndtog">ON</button></div>
+  <div class="sndttl">サウンドボタン（URL / YouTube・最大30秒）</div>
+  <div class="urlcfg">
+    <input class="urlin" id="url_self0" placeholder="自分ボタン1 URL（YouTube可）">
+    <input class="urlin" id="url_self1" placeholder="自分ボタン2 URL">
+    <input class="urlin" id="url_opp0" placeholder="相手ボタン1 URL">
+    <input class="urlin" id="url_opp1" placeholder="相手ボタン2 URL">
+  </div>
+  <button id="urlSave" class="db">保存して反映</button>
+  <div class="sndttl">プレイマット</div>
+  <label class="db file"><span id="matLabelText">プレイマット画像を選択</span><input type="file" id="areaInput" accept="image/*"></label>
+  <div id="matEditWrap" style="display:none">
+    <div class="matratio" id="matRatioText">表示範囲（点線）— ドラッグで移動 / スライダーで拡大</div>
+    <div class="matedit" id="matEdit"><img id="matEditImg" alt=""></div>
+    <div class="matctrls"><span>拡大</span><input type="range" id="matZoom" min="0.5" max="3" step="0.01" value="1"><button id="matReset" class="db" style="padding:6px 10px">リセット</button></div>
+  </div>
+  <button id="matClear" class="db">プレイマットをクリア</button>
+  <button id="sndClose" class="db">閉じる</button>
+</div>
+
+<div class="ov" id="overlay"><div class="detail">
+  <div class="bigcard" id="bigcard"></div>
+  <div class="info">
+    <h3 id="dName">—</h3>
+    <div class="kv"><span class="k">基本CP</span><span class="v num" id="dCP">0</span></div>
+    <div class="kv"><span class="k">初期エネルギー</span><span class="v stars" id="dEn">★</span></div>
+    <div class="kv"><span class="k">性質(3)</span><span class="v" id="dColors">—</span></div>
+    <div class="kv"><span class="k">発動タイミング</span><span class="v" id="dTiming">—</span></div>
+    <div class="kv" id="dLinkRow" style="display:none"><span class="k">場の合計CP</span><span class="v num" id="dLink">0</span></div>
+    <div class="eff" id="dEff">効果：（未実装）</div>
+    <div class="acts" id="dActs"></div>
+  </div>
+</div></div>
+
+<div class="ov" id="graveOv"><div class="gvbox">
+  <div class="gvhead"><h3 id="gvTitle">墓地</h3><span class="meta" id="gvMeta"></span><button class="x" id="gvClose">×</button></div>
+  <div class="gvbody" id="gvBody"></div>
+</div></div>
+
+<div class="logpanel" id="logPanel"></div>
+
+<div class="ov" id="modal"><div class="gmodal">
+  <div class="sub">RESULT</div><div class="big" id="mBig">—</div><div class="sub" id="mDetail"></div>
+  <div class="btns"><button class="b" id="mTitle">タイトルへ</button><button class="b go" id="rematchBtn">もう一度</button></div>
+</div></div>
+
+<script src="js/game.js"></script>
+</body>
+</html>
