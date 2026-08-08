@@ -15,7 +15,7 @@
   <!-- タイトル -->
   <section class="screen menu on" id="screenTitle">
     <div class="menuInner">
-      <div class="logo"><h1>企画部カードゲーム</h1><div class="en">CARD BATTLE</div></div>
+      <div class="logo"><h1>企画部カードゲーム</h1><div class="en">CARD BATTLE</div><div class="ver verTag">v0.0.1</div></div>
       <div><p class="field-lab">プレイヤー名</p><input class="tin" id="nameInput" maxlength="16" placeholder="名前を入力"></div>
       <div class="deckpick"><div class="cmini" id="titleCover" style="height:52px;aspect-ratio:296/460;border-radius:7px;overflow:hidden;flex:0 0 auto;display:none"></div><div class="info"><b id="deckPickName">デッキ未選択</b><small id="deckPickSub">タップして選択</small></div><button class="chg" id="toDeck">デッキ選択</button></div>
       <button class="bigbtn primary" id="toCpu"><span class="ic">🤖</span><span class="tx">CPU戦（ひとりで対戦）<small>コンピュータと対戦</small></span></button>
@@ -105,7 +105,7 @@
     <div id="fireEdge"></div>
     <div id="spCard"></div>
     <div class="toolbar">
-      <div class="brand"><b id="roomTag">企画部カードゲーム</b></div>
+      <div class="brand"><b id="roomTag">企画部カードゲーム</b><small class="verTag verIn">v0.0.1</small></div>
       <button class="tbtn" id="toTitle">退出</button>
     </div>
     <div class="table">
@@ -122,7 +122,7 @@
         <div class="turn"><span class="lab">TURN</span><span class="val num" id="turnNo">1</span></div>
         <div class="phchip" id="phChip">メイン</div>
         <div class="actor">手番 <b id="actorName">あなた</b></div>
-        <div class="acts"><button class="ghost" id="logBtn">ログ</button><button class="ghost" id="stalemateBtn">膠着判定</button><button class="endbtn" id="endBtn">ターンエンド</button></div>
+        <div class="acts"><button class="ghost" id="logBtn">ログ</button><button class="ghost" id="stalemateBtn">膠着判定</button><button class="ghost" id="fxBtn">効果</button><button class="endbtn" id="endBtn">ターンエンド</button></div>
       </div>
       <div class="row field"><div class="matbg" id="selfMat"></div><div class="pilewrap" id="selfZoneL"></div><div class="slots" id="selfSlots"></div><div class="pilewrap" id="selfZoneR"></div></div>
       <div class="row hand" id="selfHand"></div>
@@ -147,11 +147,13 @@
   <div class="diceres" id="diceRes"></div>
 </div></div>
 <div class="fxpop" id="fxpop"></div>
-<button id="sndBtn" class="sndbtn" title="サウンド設定">🔊</button>
+<button id="sndBtn" class="sndbtn" title="設定"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
 <div id="ytplayer" style="position:fixed;left:-9999px;top:0;width:1px;height:1px"></div>
 <div id="sndPanel" class="sndpanel">
   <div class="sndttl">サウンド設定</div>
   <div class="sndrow"><span>効果音</span><button id="sfxToggle" class="sndtog">ON</button></div>
+  <div class="sndrow"><span>効果音 音量</span><input type="range" id="sfxVol" class="volrange" min="0" max="1" step="0.01"></div>
+  <div class="sndrow"><span>URL音声 音量</span><input type="range" id="urlVol" class="volrange" min="0" max="1" step="0.01"></div>
   <div class="sndttl">サウンドボタン（URL / YouTube・最大30秒）</div>
   <div class="urlcfg">
     <input class="urlin" id="url_self0" placeholder="自分ボタン1 URL（YouTube可）">
@@ -197,6 +199,12 @@
   <div class="btns"><button class="b" id="mTitle">タイトルへ</button><button class="b go" id="rematchBtn">もう一度</button></div>
 </div></div>
 
+<div id="fxList">
+  <div class="fxbox">
+    <div class="fxhead"><span>継続中の効果</span><button id="fxListClose" class="fxclose">×</button></div>
+    <div id="fxListBody" class="fxbody"></div>
+  </div>
+</div>
 <script src="js/game.js"></script>
 </body>
 </html>
