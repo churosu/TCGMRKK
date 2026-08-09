@@ -358,3 +358,8 @@ input{font-family:inherit}
 /* ===== 再生中サウンドボタン（赤背景）＋音量スライダー ===== */
 .sbtn.playing{ background:#c0392b; color:#fff; border-color:#e74c3c; box-shadow:0 0 8px rgba(231,76,60,.6) }
 .sndrow .volrange{ flex:1; margin-left:10px; accent-color:#e74c3c }
+
+/* ===== 召喚/予告ボタンの区別 ＋ マット範囲クリップ ===== */
+.act.play{ font-weight:800 }
+.act.blank.small{ font-size:11px; padding:5px 9px; background:#28303f; color:#93a2bd; border-color:#3a465e; opacity:.8; font-weight:500 }
+.row.field{ overflow:hidden }
