@@ -117,8 +117,8 @@ function endTurn(){ if(NET.active&&!NET.isHost){ netSendIn({kind:"endTurn"}); re
   const dpid=opp(state.active); const step2=()=>offerYodaDia(state.active, ()=>rinXTurnEnd(state.active, ()=>meltoaTurnEnd(state.active, ()=>famTurnEnd(state.active, ()=>penDiaTurnEnd(state.active, ()=>ringoDiaTurnEnd(state.active, finishTurn))))));   // YODA◇→りん✕→終了
   if(state.players[dpid].lostLifeThisTurn){ offerLifeSummon(dpid, step2); } else step2(); }
 function finishTurn(){ if(state.over) return;
-  for(const pid of ["self","opp"]){ const p=state.players[pid]; p.field.forEach((c)=>{ if(c&&c.blank){ c.blankEn=(c.blankEn||0)+1;
-    if(c.blankEn>=p.life){ c.blank=false; c.curEn=c.blankEn; logLine(`${p.name}：<b>予告召喚 発動</b>！ ${c.name} をエネルギー${c.blankEn}で召喚`,true); } } }); }
+  for(const pid of ["self","opp"]){ const p=state.players[pid]; p.field.forEach((c,i)=>{ if(c&&c.blank){ c.blankEn=(c.blankEn||0)+1;
+    if(c.blankEn>=p.life){ c.blank=false; c.curEn=c.blankEn; c.summonedTurn=state.turn; logLine(`${p.name}：<b>予告召喚 発動</b>！ ${c.name} をエネルギー${c.blankEn}で召喚`,true); onSummon(pid,i); } } }); }
   if(checkWin()) return;
   state.active=opp(state.active); state.turn++; startTurn(state.active); }
 
@@ -168,8 +168,8 @@ function baseCP(pid,i){ const f=state.players[pid].field, c=f[i]; if(!c||c.blank
   if(of[jf]&&!of[jf].blank&&provides(opp(pid),jf,6)) b-=1;           // Fam：正面-1
   return Math.max(0,b); }
 function isCut(f,i,j){ const ci=f[i],cj=f[j]; if(ci&&ci._cutSlots&&ci._cutSlots.indexOf(j)>=0) return true; if(cj&&cj._cutSlots&&cj._cutSlots.indexOf(i)>=0) return true; return false; }
-function linkedCP(pid,i){ const f=state.players[pid].field; if(!f[i]||f[i].blank) return 0; if(f[i].name==="sinn"&&(f[i].curEn||0)>=2&&motifEither(103)) return 8; if(f[i].cardId===28||f[i]._solo||motifEither(38)) return baseCP(pid,i); if(linkInvert(pid)){ let s=baseCP(pid,i); for(let j=0;j<f.length;j++){ if(j===i||Math.abs(j-i)===1) continue; const c=f[j]; if(!c||c.blank||c.cardId===28||c._solo) continue; s+=baseCP(pid,j); } return s; } let s=baseCP(pid,i); for(const j of [i-1,i+1]){ const c=f[j]; if(!c||c.blank||c.cardId===28||c._solo) continue; if(isCut(f,i,j)) continue; s+=baseCP(pid,j); } return s; }
-function battleCP(pid,i,bonus){ const f=state.players[pid].field; if(f[i]&&f[i].name==="sinn"&&(f[i].curEn||0)>=2&&motifEither(103)) return 8; if(f[i]&&(f[i].cardId===28||f[i]._solo||motifEither(38))){ let v=baseCP(pid,i)+(bonus?bonus(pid,i,f[i]):0); return Math.max(0,v); } let s=Math.max(0,baseCP(pid,i)+(bonus?bonus(pid,i,f[i]):0)); const _inv=linkInvert(pid); for(let j=0;j<f.length;j++){ if(_inv){ if(j===i||Math.abs(j-i)===1) continue; } else { if(!(j===i-1||j===i+1)) continue; } const c=f[j]; if(!c||c.blank||c.cardId===28||c._solo) continue; if(!_inv&&isCut(f,i,j)) continue; let v=baseCP(pid,j)+(bonus?bonus(pid,j,c):0); s+=Math.max(0,v); } return s; }
+function linkedCP(pid,i){ const f=state.players[pid].field; if(!f[i]||f[i].blank) return 0; if(f[i].name==="sinn"&&(f[i].curEn||0)>=2&&motifEither(103)) return 8; if(f[i].cardId===28||f[i]._solo||motifEither(38)) return baseCP(pid,i); if(state._kuriSolo && !linkInvert(pid)) return baseCP(pid,i); if(linkInvert(pid)){ let s=baseCP(pid,i); for(let j=0;j<f.length;j++){ if(j===i||Math.abs(j-i)===1) continue; const c=f[j]; if(!c||c.blank||c.cardId===28||c._solo) continue; s+=baseCP(pid,j); } return s; } let s=baseCP(pid,i); for(const j of [i-1,i+1]){ const c=f[j]; if(!c||c.blank||c.cardId===28||c._solo) continue; if(isCut(f,i,j)) continue; s+=baseCP(pid,j); } return s; }
+function battleCP(pid,i,bonus){ const f=state.players[pid].field; if(state._kuriSolo && !linkInvert(pid) && f[i]){ return Math.max(0, baseCP(pid,i)+(bonus?bonus(pid,i,f[i]):0)); } if(f[i]&&f[i].name==="sinn"&&(f[i].curEn||0)>=2&&motifEither(103)) return 8; if(f[i]&&(f[i].cardId===28||f[i]._solo||motifEither(38))){ let v=baseCP(pid,i)+(bonus?bonus(pid,i,f[i]):0); return Math.max(0,v); } let s=Math.max(0,baseCP(pid,i)+(bonus?bonus(pid,i,f[i]):0)); const _inv=linkInvert(pid); for(let j=0;j<f.length;j++){ if(_inv){ if(j===i||Math.abs(j-i)===1) continue; } else { if(!(j===i-1||j===i+1)) continue; } const c=f[j]; if(!c||c.blank||c.cardId===28||c._solo) continue; if(!_inv&&isCut(f,i,j)) continue; let v=baseCP(pid,j)+(bonus?bonus(pid,j,c):0); s+=Math.max(0,v); } return s; }
 const dist8=v=>Math.abs(v-8);
 function chEn(card,delta){ if(!card) return; if(card.cardId===28) return; if(delta<0 && card.cardId===111 && (state.players.self.motif||state.players.opp.motif)) return;
   const before=card.curEn||0; card.curEn=Math.max(0,Math.min(12,before+delta));
@@ -179,8 +179,12 @@ function chEn(card,delta){ if(!card) return; if(card.cardId===28) return; if(del
     let owner=null; for(const pid of ["self","opp"]){ if(state.players[pid].field.indexOf(card)>=0){ owner=pid; break; } }
     if(owner){ const foe=state.players[opp(owner)];
       if(card.cardId===137 && (card.curEn||0)%2===0){ setLife(opp(owner),-1); logLine("るぅ(♡)：エネ偶数で相手ライフ-1",true); }
-      if(card.cardId===134){ let ti=-1,td=99; foe.field.forEach((x,i)=>{ if(x&&!x.blank){ const d=dist8(linkedCP(opp(owner),i)); if(d<td){td=d;ti=i;} } }); if(ti>=0){ foe.field[ti].noBlockTurn=state.turn; logLine("いと(♡)：相手1体をこのターンブロック不可",true); } }
-      if(card.cardId===133 && !state.pending && !state._keiProcessing){ const sp=foe.grave.find(x=>x.type==="special"&&SPECIAL_IMPL.has(x.cardId)); if(sp){ const clone=Object.assign({},sp); logLine(`りおっぴ(♡)：相手墓地の「${sp.name}」を発動`,true); setTimeout(()=>{ try{ playSpecial(owner,clone); }catch(e){} },0); } } }
+      if(card.cardId===134){ const cands=[]; foe.field.forEach((x,i)=>{ if(x&&!x.blank) cands.push(i); }); if(cands.length){ const human=(state.mode!=="cpu")||owner==="self"; const doB=(i)=>{ foe.field[i].noBlockTurn=state.turn; logLine("いと(♡)：相手をこのターンブロック不可",true); announceFx(owner,i,"いと","相手をブロック不可"); };
+        if(human && !state.pending && !state._keiProcessing && !state.pick){ const ow=owner,dp=opp(owner); state.inputOwner=ow; state.pick={ banner:`<b>いと(♡)</b>：ブロック不可にする相手を<b>タップ</b>`, owner:ow, field:{pid:dp, slots:cands, on:(i)=>{ state.pick=null; hidePrompt(); doB(i); render(); }}, cancel:()=>{ state.pick=null; hidePrompt(); render(); } }; setTimeout(()=>{ try{ showPickBanner(); render(); }catch(e){} },0); }
+        else { let ti=cands[0],td=99; cands.forEach(i=>{ const d=dist8(linkedCP(opp(owner),i)); if(d<td){td=d;ti=i;} }); doB(ti); } } }
+      if(card.cardId===133 && !state.pending && !state._keiProcessing){ const sps=foe.grave.filter(x=>x.type==="special"&&SPECIAL_IMPL.has(x.cardId)); if(sps.length){ const human=(state.mode!=="cpu")||owner==="self"; const use=(sp)=>{ const clone=Object.assign({},sp); logLine(`りおっぴ(♡)：相手墓地の「${sp.name}」を発動`,true); setTimeout(()=>{ try{ playSpecial(owner,clone); }catch(e){} },0); };
+        if(human && !state.pick){ const ow=owner; state.inputOwner=ow; setTimeout(()=>{ try{ selectPrompt(`<b>りおっぴ(♡)</b>：相手の墓地から発動する特殊カード`, sps.map(sp=>({label:sp.name,fn:()=>{hidePrompt();use(sp);}})).concat([{label:"やめる",fn:()=>hidePrompt()}])); }catch(e){} },0); }
+        else { use(sps[0]); } } } }
     card._recGuard=false; } }
 function processKeiQueue(cb){ if(state._keiProcessing){ return; } state._keiProcessing=true;
   const step=()=>{ if(!state.keiQ||!state.keiQ.length){ state._keiProcessing=false; if(cb) cb(); return; }
@@ -215,7 +219,7 @@ function attackForbiddenFor(pid,card){ if(state.turn===1) return true; if(card&&
   }
   if(i>=0){ const gf=state.players[pid].gilFacing; if(gf&&gf.turn===state.turn&&i!==gf.slot) return true; }
   if(i>=0&&provides(pid,i,8)&&state.turn<=3) return true; return false; }
-function canAttack(pid,card){ if(!card||card.blank) return false; if(card.curEn<1+(state.players[pid].tobo||0)) return false; if(attackForbiddenFor(pid,card)) return false;
+function canAttack(pid,card){ if(!card||card.blank) return false; if(state._kuri121 && card!==state.players[state._kuri121.pid].field[state._kuri121.slot]) return false; if(card.curEn<1+(state.players[pid].tobo||0)) return false; if(attackForbiddenFor(pid,card)) return false;
   const asada = card.summonedTurn===state.turn && state.players[pid].field.some((c,i)=>c&&!c.blank&&provides(pid,i,115));
   if(state.players[pid].attacked && !asada) return false; return true; }
 function attackFrom(pid,slotIdx){ if(NET.active&&!NET.isHost) return; const p=state.players[pid], card=p.field[slotIdx];
@@ -259,7 +263,8 @@ function showDefensePrompt(){const pd=state.pending, defP=state.players[pd.defen
   if(NET.active&&NET.isHost&&!ownerIsLocal(pd.defender)){ netToSeat(pd.defender,{t:"prompt",ui:{kind:"defense",msg:`<b>${defP.name}</b> の防御 — 攻撃側 合計CP <b>${atkCP}</b>（8との差 ${dist8(atkCP)}）`+(pd.noBlock?'<br><span style="color:var(--brass)">この攻撃はブロックできません</span>':""),canBlock,mustBlock:!!pd.mustBlock}}); hostWaiting(pd.defender); return; }
   document.getElementById("promptMsg").innerHTML=`<b>${defP.name}</b> の防御 — 攻撃側 合計CP <b>${atkCP}</b>（8との差 ${dist8(atkCP)}）`+(pd.noBlock?`<br><span style="color:var(--brass)">この攻撃はブロックできません</span>`:"");
   const acts=document.getElementById("promptActs"); acts.innerHTML="";
-  if(!(pd.mustBlock && canBlock)) acts.appendChild(pbtn("ライフで受ける (-1)",resolveTake));
+  const forceBlock=(pd.mustBlock || (state.tsukkomiTurn===state.turn)) && canBlock;
+  if(!forceBlock) acts.appendChild(pbtn("ライフで受ける (-1)",resolveTake));
   if(canBlock) acts.appendChild(pbtn("ブロックする",beginBlockSelect));
   if(pd.mustBlock && canBlock){ const w=document.createElement("div"); w.style.cssText="flex:1 1 100%;font-size:11px;color:var(--brass);text-align:center"; w.textContent="※ 相手効果により必ずブロック"; acts.appendChild(w); }
   document.getElementById("prompt").classList.add("on"); }
@@ -284,7 +289,7 @@ function destroyBattle(pid,slot,tie){ const c=state.players[pid].field[slot]; if
   if(motifActive(pid,80) && (c.curEn||0)>=2){ chEn(c,-1); announceFx(pid,slot,c.name,"純水(モチーフ)：エネ消費で耐性"); logLine("純水(モチーフ)：エネ1消費で破壊されない",true); return; }
   if(tie && yukigaBlank() && state.players[pid].field.some(x=>x&&x.blank)){ announceFx(pid,slot,c.name,"雪雅(モチーフ)：ブランクで相打ち耐性"); logLine("雪雅(モチーフ)：相打ちで破壊されない",true); return; }
   if(c._battleImmune){ announceFx(pid,slot,c.name,"ひいらぎ：破壊耐性"); logLine("ひいらぎ(◎)：このバトル破壊されない",true); return; }
-  if(tie){ const d120=[]; state.players[pid].field.forEach((x,i)=>{ if(x&&!x.blank&&provides(pid,i,120)) d120.push(i); }); if(d120.length){ const linkedTo120=d120.some(di=> di===slot || Math.abs(di-slot)===1); if(!linkedTo120){ announceFx(pid,slot,c.name,"D!amusung(◎)：非リンクは相打ち耐性"); logLine("D!amusung(◎)：このキャラとリンクしていない味方は相打ちで破壊されない",true); return; } } }
+  if(tie){ const d120=[]; state.players[pid].field.forEach((x,i)=>{ if(x&&!x.blank&&provides(pid,i,120)) d120.push(i); }); if(d120.length){ const linkedTo120=d120.some(di=> isLinked(pid,di,slot)); if(!linkedTo120){ announceFx(pid,slot,c.name,"D!amusung(◎)：非リンクは相打ち耐性"); logLine("D!amusung(◎)：このキャラとリンクしていない味方は相打ちで破壊されない",true); return; } } }
   if(c.cardId===114 && state.pending){ const pd=state.pending; const lc=(p,s)=>1+[s-1,s+1].filter(j=>{const x=state.players[p].field[j]; return x&&!x.blank;}).length; if(pd.attacker!=null && lc(pd.attacker,pd.atkSlot)!==lc(pid,slot)){ state.players[pid].field[slot]=null; c.blank=false; c.curEn=c.energy; state.players[pid].hand.push(c); announceFx(pid,slot,c.name,"リンク数差で手札へ"); logLine("ぺんしりゃ(⬠)：リンク数が違うため手札に戻る",true); return; } }
   toGrave(pid,slot,tie?"相打ち":"敗北",true); }
 function preBattleDamu(pd,defSlot,done){ pd.damu=pd.damu||{}; const cands=[];
@@ -319,7 +324,7 @@ function resolveBlock(defSlot){const pd=state.pending; if(!pd) return;
   if(invert && winner!=="tie"){ winner = winner==="a"?"d":"a"; announceFx(null,null,"とれんさー","バトル結果を反転"); }
   state.afterBattle=state.afterBattle||[]; let r;
   const hiiragiSave = pd.hiiragiRoll!=null && baseCP(pd.defender,defSlot)!==pd.hiiragiRoll;
-  if(winner==="a"){ destroyBattle(pd.defender,defSlot,false); r=`${aN}(${aCP})勝ち → ${dN}`; if(state.players[pd.attacker].field.some((cc,i)=>cc&&!cc.blank&&provides(pd.attacker,i,136))){ setLife(pd.defender,-1); logLine("メルトア(♡)：相手のみ破壊で相手ライフ-1",true); announceFx(pd.attacker,pd.atkSlot,"メルトア","相手ライフ-1"); } }
+  if(winner==="a"){ destroyBattle(pd.defender,defSlot,false); r=`${aN}(${aCP})勝ち → ${dN}`; { const _ac=state.players[pd.attacker].field[pd.atkSlot]; const _mod=_ac && baseCP(pd.attacker,pd.atkSlot)!==(_ac.cp||0); if(_mod && state.players[pd.attacker].field.some((cc,i)=>cc&&!cc.blank&&provides(pd.attacker,i,136))){ setLife(pd.defender,-1); logLine("メルトア(♡)：基本CP変動キャラが相手のみ破壊 → 相手ライフ-1",true); announceFx(pd.attacker,pd.atkSlot,"メルトア","相手ライフ-1"); } } }
   else if(winner==="d"){ if(hiiragiSave){ announceFx(pd.attacker,pd.atkSlot,aN,"ひいらぎ：破壊耐性"); logLine("ひいらぎ：出目≠基本CPのため破壊されない",true); r=`${dN}(${dCP})勝ち（${aN}は破壊耐性）`; } else { destroyBattle(pd.attacker,pd.atkSlot,false); r=`${dN}(${dCP})勝ち → ${aN}`; } }
   else { let killA=true,killD=true; if(invA&&!invD) killD=false; if(invD&&!invA) killA=false; if(hiiragiSave) killA=false; if(killA) destroyBattle(pd.attacker,pd.atkSlot,true); if(killD) destroyBattle(pd.defender,defSlot,true); r="相打ち"; }
   logLine(`ブロック：攻${aCP}(差${da}) / 防${dCP}(差${dd}) → <b>${r}</b>`,true); endAttack(); }
@@ -351,14 +356,23 @@ function rioppiDiaHook(pid,thr,next){ const dpid=opp(pid), foe=state.players[dpi
   if(!human){ let best=slots[0],bd=99; slots.forEach(i=>{const d=dist8(linkedCP(dpid,i)); if(d<bd){bd=d;best=i;}}); apply(best); return; }
   selectPrompt(`<b>りおっぴ◇</b>：エネルギー${thr}未満の相手キャラを破壊`, slots.map(i=>({label:`${foe.field[i].name}(⚡${foe.field[i].curEn||0})`,fn:()=>{ hidePrompt(); apply(i); }})).concat([{label:"やめる",fn:()=>{ hidePrompt(); next(); }}])); }
 // エネルギー消費はここ（バトル確定後）。攻撃キャラが生存していれば1消費（くりで削った時は消費なし）
-function endAttack(){ const pd=state.pending; let masa=null;
+function endAttack(){ const pd=state.pending; const _atkPid=pd?pd.attacker:null; const _kctx=state._kuri121; const _isKuriEnd=!!(_kctx && pd && pd.attacker===_kctx.pid && pd.atkSlot===_kctx.slot); let masa=null;
   if(pd){ const aP=state.players[pd.attacker], atk=aP.field[pd.atkSlot]; const cost=1+(aP.tobo||0); const _mfree=aP.motifMasaNext; if(_mfree) aP.motifMasaNext=false; if(atk && !pd.noEnergyCost && !_mfree){ atk.curEn=Math.max(0,(atk.curEn||0)-cost); } if(atk) aP.tobo=0;
     if(atk && atk.cardId===49 && aP.field[pd.atkSlot]===atk){ aP.field[pd.atkSlot]=null; aP.exclude.push(atk); logLine("Masa(✕)：アタック終了で除外",true); }
     if(atk && atk.cardId===114 && aP.field[pd.atkSlot]===atk){ aP.field[pd.atkSlot]=null; aP.exclude.push(atk); logLine("ぺんしりゃ(⬠)：アタック時に除外",true); }
     if(atk && provides(pd.attacker,pd.atkSlot,24) && (atk.curEn||0)>=1) masa={pid:pd.attacker,slot:pd.atkSlot}; }
   ["self","opp"].forEach(s=>state.players[s].field.forEach(c=>{ if(c){ c._solo=false; c._cutSlots=null; c._cpx2=false; c._battleImmune=false; c._cpDown=false; } }));
   state.pending=null; hidePrompt(); if(checkWin()) return; render();
-  processKeiQueue(()=>{ if(checkWin()) return; if(masa){ offerMasaDia(masa, runAfterBattle); } else runAfterBattle(); }); }
+  if(_isKuriEnd){ state._kuri121=null; state._kuriSolo=false; const _ret=_kctx.ret, _c=_kctx.cont; state.active=_ret; logLine("くり(◎)：追加アタック終了 → 相手のターンに戻る",true); render(); processKeiQueue(()=>{ if(checkWin()) return; _c(); }); return; }
+  processKeiQueue(()=>{ if(checkWin()) return; if(masa){ offerMasaDia(masa, ()=>offerKuri121(_atkPid, runAfterBattle)); } else offerKuri121(_atkPid, runAfterBattle); }); }
+function offerKuri121(atkPid, cont){ if(!atkPid || state._kuri121){ cont(); return; }
+  const dpid=opp(atkPid), p=state.players[dpid];
+  let ki=-1; for(let i=0;i<p.field.length;i++){ if(p.field[i]&&!p.field[i].blank&&provides(dpid,i,121)&&canAttack(dpid,p.field[i])){ ki=i; break; } }
+  if(ki<0){ cont(); return; }
+  const start=()=>{ state._kuri121={pid:dpid,slot:ki,ret:state.active,cont}; state._kuriSolo=true; state.active=dpid; state.phase=2; logLine("くり(◎)：相手アタック終了 → 追加アタック（くりのみ・非リンク）",true); announceFx(dpid,ki,"くり","追加アタック"); render(); setTimeout(()=>{ if(state._kuri121) attackFrom(dpid, ki); }, 300); };
+  const human=(state.mode!=="cpu")||dpid==="self";
+  if(!human){ start(); return; }
+  state.inputOwner=dpid; selectPrompt(`<b>くり(◎)</b>：相手のアタック終了時、追加アタックしますか？（くりのみ・非リンク）`, [{label:"追加アタックする",fn:()=>{ hidePrompt(); start(); }},{label:"しない",fn:()=>{ hidePrompt(); cont(); }}]); }
 function offerMasaDia(m,done){ const pid=m.pid, slot=m.slot, p=state.players[pid], atk=p.field[slot]; if(!atk||(atk.curEn||0)<1){ done(); return; }
   const reatk=()=>{ atk.curEn=0; p.attacked=true; state.phase=2; state.pending={attacker:pid,atkSlot:slot,defender:opp(pid),noBlock:false,noEnergyCost:true}; logLine(`Masa：全エネルギー消費で再攻撃`,true); announceFx(pid,slot,atk.name,"全エネ消費で再攻撃"); render(); resolveOrAskDefense(); };
   const human=(state.mode!=="cpu")||pid==="self";
@@ -569,7 +583,7 @@ function asadaDiaSummon(pid,slot){ const p=state.players[pid]; const even=(linke
   if(!even){ logLine(`新薬浅田◇：合計CP奇数で不発`,true); return; }
   if(p.deck.length===0){ logLine(`新薬浅田◇：山札0でドロー不可`,true); return; }
   draw(pid,1,true); announceFx(pid,slot,"新薬浅田","召喚時 1ドロー");
-  const resolve=(r)=>{ if(state.dice) state.dice[pid]=r; if(r>=4){ const foe=state.players[opp(pid)]; if(foe.deck.length){ const d=foe.deck.pop(); const kinds=new Set(foe.grave.map(x=>x.cardId)); if(kinds.has(d.cardId)||kinds.size<CONFIG.GRAVE_KINDS) foe.grave.push(d); else foe.exclude.push(d); } logLine(`新薬浅田◇：ダイス${r} → 相手山札上を1枚破棄`,true); } else logLine(`新薬浅田◇：ダイス${r}`,true); render(); };
+  const resolve=(r)=>{ if(state.dice) state.dice[pid]=r; if(r>=4){ const foe=state.players[opp(pid)]; if(foe.deck.length){ const d=foe.deck.pop(); showSpecialCard(d,"相手の破棄カード"); if(NET.active&&NET.isHost){ try{ NET.conns.forEach(c=>{ if(c.open) c.send({t:"special",card:{cardId:d.cardId,name:d.name,img:d.img},label:"相手の破棄カード"}); }); }catch(e){} } const kinds=new Set(foe.grave.map(x=>x.cardId)); if(kinds.has(d.cardId)||kinds.size<CONFIG.GRAVE_KINDS) foe.grave.push(d); else foe.exclude.push(d); } logLine(`新薬浅田◇：ダイス${r} → 相手山札上を1枚破棄`,true); } else logLine(`新薬浅田◇：ダイス${r}`,true); render(); };
   const human=(state.mode!=="cpu")||pid==="self";
   if(human) openDiceScreen("新薬浅田◇",[p.name],vals=>{ closeDice(); resolve(vals[0]); }); else resolve(1+(Math.random()*6|0)); }
 function offerYodaDia(pid,done){ const p=state.players[pid]; let ys=-1; for(let i=0;i<p.field.length;i++){ if(p.field[i]&&!p.field[i].blank&&provides(pid,i,16)&&(p.field[i].curEn||0)>=1){ ys=i; break; } }
@@ -685,9 +699,10 @@ function canGainLife(pid){ if(pid && state.players[pid].noHealTurn===state.turn)
 function setLife(pid,d){const p=state.players[pid]; if(d>0&&!canGainLife(pid)){ logLine("Gumi(モチーフ)：互いのライフが奇数のため増加不可",true); if(!checkWin()) render(); return; } p.life=Math.max(0,Math.min(CONFIG.LIFE_MAX,p.life+d)); if(d>0) onLifeGain(pid); if(!checkWin()) render();}
 function checkWin(){for(const pid of ["self","opp"]) if(state.players[pid].life<=0){ gameOver(opp(pid),`${state.players[pid].name}のライフが0`); return true; } return false;}
 function stalemate(){ if(state.over) return; const s=state.players.self.life,o=state.players.opp.life; let w=null; if(s>o)w="self"; else if(o>s)w="opp"; gameOver(w,`膠着ライフ判定（${state.players.self.name} ${s} / ${state.players.opp.name} ${o}）`);}
-function gameOver(w,reason){state.over=true; const big=document.getElementById("mBig");
-  if(w===null){big.textContent="引き分け"; big.className="big";} else {const you=w==="self"; big.textContent=(you?state.players.self.name:state.players.opp.name)+" の勝ち"; big.className="big "+(you?"win":"lose");}
-  document.getElementById("mDetail").textContent=reason; logLine(`<span class="hi">■ 決着</span>：${reason}`,true); Snd.play(w==="self"?"win":"lose"); render(); document.getElementById("modal").classList.add("on"); }
+function gameOver(w,reason){ state.over=true; state.overInfo={w,reason}; logLine(`<span class="hi">■ 決着</span>：${reason}`,true); const localWin=(w===BOT()); Snd.play(w===null?"lose":(localWin?"win":"lose")); showResult(); render(); if(NET.active&&NET.isHost) netBroadcastState(); }
+function showResult(){ if(!state||!state.overInfo) return; const {w,reason}=state.overInfo; const big=document.getElementById("mBig"); const localWin=(w===BOT());
+  if(w===null){ big.textContent="引き分け"; big.className="big"; } else { big.textContent=(w==="self"?state.players.self.name:state.players.opp.name)+" の勝ち"; big.className="big "+(localWin?"win":"lose"); }
+  document.getElementById("mDetail").textContent=reason||""; document.getElementById("modal").classList.add("on"); }
 
 /* ===== CPU ===== */
 function maybeCpu(){ if(!state||state.mode!=="cpu"||state.over||state.active!=="opp"||state.pending) return; setTimeout(cpuTurn,700); }
@@ -801,7 +816,7 @@ function openDetail(card, ctx){ DETAIL_CTX={uid:card.id,zone:ctx.zone,pid:ctx.pi
     const n2=document.createElement("div"); n2.style.cssText="flex:1 1 100%;font-size:11px;color:var(--mut);text-align:center"; n2.textContent=_hc?"※ いつでも発動可（相手ターン中・アタック後も可）":"※ 対応キャラが場にいる時のみ発動可"; acts.appendChild(n2);
   } else if(ctx.zone==="hand"&&ctrl===ctx.pid&&card.type==="character"&&state.phase===1&&state.players[ctx.pid].field.includes(null)){
     if(!state.players[ctx.pid].playedChar) acts.appendChild(dact("召喚","play",()=>beginPlacing(card.id,false)));
-    acts.appendChild(dact("予告召喚（裏）","blank",()=>beginPlacing(card.id,true)));
+    acts.appendChild(dact("予告(裏)","blank small",()=>beginPlacing(card.id,true)));
   } else if(ctx.zone==="hand"&&ctrl===ctx.pid&&card.type==="motif"){
     const hasChar=state.players[ctx.pid].field.some(c=>c&&!c.blank&&c.name===card.name);
     if(state.phase===1&&hasChar) acts.appendChild(dact("発動（モチーフ）","",()=>activateMotif(ctx.pid,card)));
@@ -885,7 +900,7 @@ function renderHand(id,pid,revealed){const c=document.getElementById(id); c.inne
   if(!revealed){ hand.forEach(card=>{ c.appendChild(cardNode(card,{faceDown:true, zone:"hand", pid})); }); return; }
   const order=[], groups={};
   hand.forEach(card=>{ if(!(card.cardId in groups)){ groups[card.cardId]=[]; order.push(card.cardId); } groups[card.cardId].push(card); });
-  order.forEach(cid=>{ groups[cid].forEach((card,gi)=>{ const node=cardNode(card,{faceDown:false, zone:"hand", pid}); if(gi>0){ node.classList.add("stacked"); node.style.marginLeft="-38px"; node.style.marginTop=(gi*4)+"px"; node.style.zIndex=String(10+gi); } c.appendChild(node); }); });}
+  order.forEach(cid=>{ groups[cid].forEach((card,gi)=>{ const node=cardNode(card,{faceDown:false, zone:"hand", pid}); if(gi>0){ node.classList.add("stacked"); node.style.marginLeft="-34px"; node.style.zIndex=String(10+gi); } c.appendChild(node); }); });}
 function renderSlots(id,pid){const c=document.getElementById(id); c.innerHTML=""; const p=state.players[pid], ctrl=humanControls();
   const foe=state.players[opp(pid)]; const _col=(foe&&foe.motif)?COLOR_BY_NAME[foe.motif.name]:null; if(_col){ c.classList.add("tinted"); c.style.setProperty("--tint",_col); } else { c.classList.remove("tinted"); c.style.removeProperty("--tint"); }
   for(let i=0;i<CONFIG.SLOTS;i++){const card=p.field[i]; const slot=document.createElement("div"); slot.className="slot";
@@ -938,8 +953,8 @@ function render(){ if(!state) return; maintainMotifs();
   document.getElementById("stripSelf").classList.toggle("active",aBot); document.getElementById("stripOpp").classList.toggle("active",!aBot);
   let revBot,revTop;
   if(state.mode==="cpu"){ revBot=true; revTop=false; }
-  else if(NET.active && !NET.isHost){ if(NET.seat==="spec"){ revBot=(NET.viewHand===bot); revTop=(NET.viewHand===top); } else { revBot=true; revTop=(NET.viewHand===top); } }
-  else { revBot=state.active===bot; revTop=state.active===top; if(NET.viewHand){ revBot=revBot||NET.viewHand===bot; revTop=revTop||NET.viewHand===top; } }
+  else if(NET.active){ if(NET.seat==="spec"){ revBot=(NET.viewHand===bot); revTop=(NET.viewHand===top); } else { revBot=true; revTop=(NET.viewHand===top); } }
+  else { revBot=state.active===bot; revTop=state.active===top; }
   renderHand("selfHand",bot,revBot); renderHand("oppHand",top,revTop);
   renderSlots("selfSlots",bot); renderSlots("oppSlots",top);
   renderZones(bot,"selfZoneL","selfZoneR"); renderZones(top,"oppZoneL","oppZoneR");
@@ -949,7 +964,7 @@ function render(){ if(!state) return; maintainMotifs();
   document.getElementById("actorName").textContent=state.players[state.active].name;
   const cpuActing=state.mode==="cpu"&&state.active==="opp";
   document.getElementById("endBtn").disabled=state.over||!!state.pending||cpuActing||(NET.active&&(NET.seat==="spec"||state.active!==NET.seat))||(mustAttack(state.active)&&!(state.mode==="cpu"&&state.active==="opp"));
-  { const _la=(state.mode==="cpu")?(state.active==="self"):(NET.active?(state.active===NET.seat):true); const _fe=document.getElementById("fireEdge"); if(_fe) _fe.classList.toggle("on", !!(_la&&mustAttack(state.active))); }
+  { const _la=(state.mode==="cpu")?(state.active==="self"):(NET.active?(state.active===NET.seat):true); const _ma=(NET.active&&!NET.isHost)?!!state.mustAtk:mustAttack(state.active); const _fe=document.getElementById("fireEdge"); if(_fe) _fe.classList.toggle("on", !!(_la&&_ma)); }
   applyMats(); if(NET.active&&!NET.isHost) clientRenderPrompt(); if(NET.active && NET.isHost) netBroadcastState(); }
 
 /* ===== util ===== */
@@ -995,7 +1010,7 @@ const UrlAudio=(function(){ let ytReady=false,yt=null,pending=null,aud=null,tmr=
   function initYT(){ if(window.YT&&window.YT.Player){ mkPlayer(); return; } if(!document.getElementById("ytapi")){ const s=document.createElement("script"); s.id="ytapi"; s.src="https://www.youtube.com/iframe_api"; document.head.appendChild(s); } const prev=window.onYouTubeIframeAPIReady; window.onYouTubeIframeAPIReady=()=>{ if(prev) try{prev();}catch(e){} mkPlayer(); }; }
   function stop(){ if(tmr){clearTimeout(tmr);tmr=null;} try{ if(yt&&yt.stopVideo) yt.stopVideo(); }catch(e){} if(aud){ try{aud.pause();}catch(e){} } current=null; if(typeof updateSoundBtnState==="function") updateSoundBtnState(); }
   function playYT(id){ if(!ytReady||!yt){ pending=id; initYT(); return; } stop(); try{ yt.loadVideoById(id,0); yt.playVideo(); yt.setVolume(Math.round(vol*100)); }catch(e){} tmr=setTimeout(stop,30000); }
-  function play(url){ if(!url) return; stop(); current=url; const id=ytId(url); if(id){ playYT(id); } else { if(!aud) aud=new Audio(); try{ aud.src=url; aud.currentTime=0; aud.volume=vol; aud.play().catch(()=>{}); tmr=setTimeout(stop,30000);}catch(e){} } if(typeof updateSoundBtnState==="function") updateSoundBtnState(); }
+  function play(url,fromNet){ if(!url) return; stop(); current=url; if(!fromNet && typeof netBroadcastUrl==="function") netBroadcastUrl(url); const id=ytId(url); if(id){ playYT(id); } else { if(!aud) aud=new Audio(); try{ aud.src=url; aud.currentTime=0; aud.volume=vol; aud.play().catch(()=>{}); tmr=setTimeout(stop,30000);}catch(e){} } if(typeof updateSoundBtnState==="function") updateSoundBtnState(); }
   function setVol(v){ vol=Math.max(0,Math.min(1,v)); try{localStorage.setItem("kk_urlvol",vol);}catch(e){} if(aud) aud.volume=vol; try{ if(yt&&yt.setVolume) yt.setVolume(Math.round(vol*100)); }catch(e){} }
   return { play, stop, setVol, getVol:()=>vol, current:()=>current }; })();
 let SND_URLS={self:["",""],opp:["",""]};
@@ -1049,6 +1064,7 @@ function yukigaBlank(){ return motifEither(83) && ["self","opp"].some(s=>state.p
 function turnTrigOff(pid){ return state.players[opp(pid)].field.some((c,i)=>c&&!c.blank&&provides(opp(pid),i,118)); }
 function linkCount(pid,i){ return 1+[i-1,i+1].filter(j=>{const x=state.players[pid].field[j]; return x&&!x.blank;}).length; }
 function linkInvert(pid){ return state.players[pid].field.some((c,i)=>c&&!c.blank&&provides(pid,i,127)); }
+function isLinked(pid,a,b){ if(a===b) return true; const adj=Math.abs(a-b)===1; return linkInvert(pid)?!adj:adj; }
 function penIgnoreBlock(){ return motifEither(41) && (state.players.self.life<=4||state.players.opp.life<=4); }
 function linkCount(pid,slot){ let n=0; [slot-1,slot,slot+1].forEach(j=>{const c=state.players[pid].field[j]; if(c&&!c.blank) n++;}); return n; }
 function rescueFromExclude(pid,card){ if(!card||card.type!=="character") return false; if(!motifActive(pid,61)) return false; const r=d6(); const dec=[3,4]; logLine(`モチリン(モチーフ)：除外回避ダイス ${r}（宣言 ${dec.join("/")}）`,true); if(dec.indexOf(r)>=0){ card.blank=false; card.curEn=card.energy; state.players[pid].hand.push(card); announceFx(pid,null,card.name,"除外回避→手札"); return true; } return false; }
@@ -1095,14 +1111,16 @@ function motifYaku(pid,fin){ const p=state.players[pid]; let done=0;
     opts.push({label:"やめる",fn:()=>{ hidePrompt(); fin(); }});
     selectPrompt(`<b>やく(モチーフ)</b>：召喚するキャラ（${done+1}/2）`, opts); };
   one(); }
-function motifToren(pid,fin){ const names={}; ["self","opp"].forEach(s=>{ const P=state.players[s]; [].concat(P.hand,P.deck,P.grave).forEach(c=>{ names[c.cardId]=c.name; }); });
-  const ids=Object.keys(names); if(!ids.length){ fin(); return; }
-  const doExclude=(cid)=>{ cid=+cid; ["self","opp"].forEach(s=>{ const P=state.players[s]; ["hand","deck","grave"].forEach(z=>{ for(let i=P[z].length-1;i>=0;i--){ if(P[z][i].cardId===cid) P.exclude.push(P[z].splice(i,1)[0]); } }); }); logLine(`とれ(モチーフ)：「${names[cid]}」を全除外`,true); render(); fin(); };
-  const human=(state.mode!=="cpu")||pid==="self"; if(!human){ doExclude(ids[0]); return; }
-  selectPrompt(`<b>とれ(モチーフ)</b>：全除外するカードを宣言`, ids.map(cid=>({label:names[cid],fn:()=>{hidePrompt();doExclude(cid);}})).concat([{label:"やめる",fn:()=>{hidePrompt();fin();}}])); }
+function motifToren(pid,fin){ const nm=(cid)=>{ const c=CARD_POOL.find(x=>x.cardId===cid); return c?((c.shape?c.shape+" ":"")+c.name):("#"+cid); };
+  const doExclude=(cid)=>{ cid=+cid; ["self","opp"].forEach(s=>{ const P=state.players[s]; ["hand","deck","grave"].forEach(z=>{ for(let i=P[z].length-1;i>=0;i--){ if(P[z][i].cardId===cid) P.exclude.push(P[z].splice(i,1)[0]); } }); }); logLine(`とれ(モチーフ)：「${nm(cid)}」を全除外`,true); announceFx(pid,null,"とれんさー",`${nm(cid)}を全除外`); render(); fin(); };
+  const human=(state.mode!=="cpu")||pid==="self";
+  if(!human){ const foe=state.players[opp(pid)]; const t=[].concat(foe.hand,foe.deck,foe.grave)[0]; if(t) doExclude(t.cardId); else fin(); return; }
+  const opts=CARD_POOL.filter(c=>!EXCLUDED_IDS.has(c.cardId)).map(c=>({label:(c.shape?c.shape+" ":"")+c.name, fn:()=>{hidePrompt();doExclude(c.cardId);}}));
+  opts.push({label:"やめる",fn:()=>{hidePrompt();fin();}});
+  selectPrompt(`<b>とれ(モチーフ)</b>：全除外するカードを宣言（全カードから／図形＋名前）`, opts); }
 /* ===== 特殊カード ===== */
-function showSpecialCard(card){ if(!card) return; let ov=document.getElementById("spCard"); if(!ov) return; const im=cardImg(card);
-  ov.innerHTML=`<div class="spInner">${im?`<img src="${im}" alt="">`:`<div class="bigcard face">${cardFaceHTML(card)}</div>`}<div class="spLabel">特殊カード：${card.name}</div></div>`;
+function showSpecialCard(card,label){ if(!card) return; let ov=document.getElementById("spCard"); if(!ov) return; const im=cardImg(card);
+  ov.innerHTML=`<div class="spInner">${im?`<img src="${im}" alt="">`:`<div class="bigcard face">${cardFaceHTML(card)}</div>`}<div class="spLabel">${label||"特殊カード"}：${card.name}</div></div>`;
   ov.classList.add("on"); clearTimeout(ov._t); ov._t=setTimeout(()=>ov.classList.remove("on"),2000); }
 function maybeShowSpecial(pid,card){ showSpecialCard(card);   // 自分・相手どちらの特殊もカットイン表示
   if(NET.active&&NET.isHost){ NET.conns.forEach(c=>{ if(!c.open) return; const r=NET.roles[c.peer]||"spec"; const seat=r==="A"?"self":r==="B"?"opp":null; if(seat!==pid||seat===null) { try{ c.send({t:"special",card:{cardId:card.cardId,name:card.name,img:card.img,cp:card.cp,energy:card.energy,colors:card.colors,shape:card.shape,type:card.type,varcp:card.varcp}}); }catch(e){} } }); } }
@@ -1154,7 +1172,7 @@ function specialGamble(pid,done,cancel){
     {label:"自分のダイス",fn:()=>doGamble(pid,[a,b],pid,done)},
     {label:"相手のダイス",fn:()=>doGamble(pid,[a,b],opp(pid),done)} ]); }); }); }
 function doGamble(pid,nums,rollPid,done){ hidePrompt(); openDiceScreen("ギャンブル",[state.players[rollPid].name],vals=>{ const r=vals[0]; if(state.dice) state.dice[rollPid]=r; closeDice();
-  const hit=nums.includes(r); if(hit){ const foe=state.players[opp(pid)]; if(foe.deck.length){ const d=foe.deck.pop(); const kinds=new Set(foe.grave.map(x=>x.cardId)); if(kinds.has(d.cardId)||kinds.size<CONFIG.GRAVE_KINDS) foe.grave.push(d); else foe.exclude.push(d); } }
+  const hit=nums.includes(r); if(hit){ const foe=state.players[opp(pid)]; if(foe.deck.length){ const d=foe.deck.pop(); showSpecialCard(d,"相手の破棄カード"); if(NET.active&&NET.isHost){ try{ NET.conns.forEach(c=>{ if(c.open) c.send({t:"special",card:{cardId:d.cardId,name:d.name,img:d.img},label:"相手の破棄カード"}); }); }catch(e){} } const kinds=new Set(foe.grave.map(x=>x.cardId)); if(kinds.has(d.cardId)||kinds.size<CONFIG.GRAVE_KINDS) foe.grave.push(d); else foe.exclude.push(d); } }
   done(hit?`的中(${r})→相手山札1枚破棄`:`はずれ(${r})`); }); }
 function specialKampi(pid,done,cancel){ const x2=state._sasshiX2;
   const run=(maxN,amt)=>{ const p=state.players[pid]; let count=0; const used=new Set();
@@ -1213,7 +1231,8 @@ function specialShin(pid,done,cancel){ const p=state.players[pid]; const chars=p
   opts.push({label:"やめる",fn:()=>{ hidePrompt(); cancel(); }});
   selectPrompt(`新メンバー！：山札からキャラを選択`, opts); }
 function pbtn(l,fn){const b=document.createElement("button");b.className="pbtn";b.textContent=l;b.onclick=(e)=>{Snd.play("click");fn(e);};return b;}
-function logLine(html,hi=false){const l=$("logPanel");const d=document.createElement("div");d.innerHTML=(hi?"<b>":"")+html+(hi?"</b>":"");l.prepend(d);}
+function logLine(html,hi=false){ if(state){ state.log=state.log||[]; state.log.unshift({h:html,hi:!!hi}); if(state.log.length>80) state.log.length=80; } const l=$("logPanel"); if(l){ const d=document.createElement("div"); d.innerHTML=(hi?"<b>":"")+html+(hi?"</b>":""); l.prepend(d); } }
+function renderClientLog(){ const l=$("logPanel"); if(!l||!state||!state.log) return; l.innerHTML=""; state.log.forEach(e=>{ const d=document.createElement("div"); d.innerHTML=(e.hi?"<b>":"")+e.h+(e.hi?"</b>":""); l.appendChild(d); }); }
 let flashTimer=null;
 function flash(msg){ if(state&&state.pending) return; const p=$("prompt"),m=$("promptMsg"),a=$("promptActs"); m.textContent=msg; a.innerHTML=""; p.classList.add("on"); clearTimeout(flashTimer); flashTimer=setTimeout(()=>{ if(!state||!state.pending) p.classList.remove("on"); },1500);}
 
@@ -1288,11 +1307,12 @@ function ensurePeerLib(cb){ if(window.Peer){ cb(); return; } netLog("通信ラ�
   if(!document.getElementById("peerlib")){ const s=document.createElement("script"); s.id="peerlib"; s.src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"; s.onerror=()=>netLog("通信ライブラリの読込に失敗（ネット接続を確認）"); document.head.appendChild(s); }
   let n=0; const iv=setInterval(()=>{ if(window.Peer){ clearInterval(iv); cb(); } else if(++n>100){ clearInterval(iv); netLog("通信ライブラリの読込に失敗（ネット接続を確認）"); } },100); }
 function showLobby(){ showScreen("Room"); $("lobby").style.display="block"; }
-function netSnapshotFor(role,seat){ const s={players:JSON.parse(JSON.stringify(state.players)), turn:state.turn,phase:state.phase,active:state.active,over:state.over,dice:state.dice,tsukkomiTurn:state.tsukkomiTurn, pending: state.pending?{attacker:state.pending.attacker,atkSlot:state.pending.atkSlot,defender:state.pending.defender,noBlock:!!state.pending.noBlock}:null, placing: state.placing?{blank:!!state.placing.blank}:null };
+function netSnapshotFor(role,seat){ const s={players:JSON.parse(JSON.stringify(state.players)), turn:state.turn,phase:state.phase,active:state.active,mustAtk:mustAttack(state.active),over:state.over,overInfo:state.overInfo||null,log:(state.log||[]).slice(0,80),dice:state.dice,tsukkomiTurn:state.tsukkomiTurn, pending: state.pending?{attacker:state.pending.attacker,atkSlot:state.pending.atkSlot,defender:state.pending.defender,noBlock:!!state.pending.noBlock}:null, placing: state.placing?{blank:!!state.placing.blank}:null };
   if(role!=="spec"){ const other=(seat==="self")?"opp":"self"; if(s.players[other]) s.players[other].hand=s.players[other].hand.map(()=>({hidden:true,type:"character"})); }
   return s; }
 function netBroadcastState(){ if(!NET.isHost) return; NET.conns.forEach(c=>{ if(!c.open) return; const r=NET.roles[c.peer]||"spec"; const seat=r==="A"?"self":(r==="B"?"opp":null); try{ c.send({t:"state",snap:netSnapshotFor(r,seat)}); }catch(e){} }); }
-function netApplyState(snap){ state=snap; state.mode="p2p"; state.afterBattle=state.afterBattle||[]; render(); }
+function netBroadcastUrl(url){ if(!NET.active) return; const msg={t:"url",url:url||null}; NET.conns.forEach(c=>{ if(c.open) try{c.send(msg);}catch(e){} }); }
+function netApplyState(snap){ state=snap; state.mode="p2p"; state.afterBattle=state.afterBattle||[]; render(); renderClientLog(); if(state.over&&state.overInfo) showResult(); }
 function renderLobby(){ const box=$("lobbyList"); if(!box) return; $("lobbyCode").textContent=NET.code||"----"; box.innerHTML="";
   NET.parts.forEach(p=>{ const row=document.createElement("div"); row.className="lrow"; const nm=document.createElement("span"); nm.className="ln"; nm.textContent=p.name+(p.peer==="host"?"（オーナー）":""); row.appendChild(nm); const role=NET.roles[p.peer]||"spec";
     if(NET.isHost){ const sel=document.createElement("select"); sel.className="lsel"; [["A","対戦者A"],["B","対戦者B"],["spec","観戦"]].forEach(([v,l])=>{ const o=document.createElement("option"); o.value=v; o.textContent=l; if(v===role)o.selected=true; sel.appendChild(o); }); sel.onchange=()=>{ const val=sel.value; if(val!=="spec"){ for(const k in NET.roles){ if(k!==p.peer&&NET.roles[k]===val) NET.roles[k]="spec"; } } NET.roles[p.peer]=val; hostSyncLobby(); }; row.appendChild(sel); }
@@ -1305,7 +1325,7 @@ function createRoom(){ ensurePeerLib(()=>{ const code=Math.random().toString(36)
     NET.peer.on("open",()=>{ netLog("ルーム作成完了。コードを共有してください。"); showLobby(); renderLobby(); });
     NET.peer.on("error",e=>{ netLog("エラー："+((e&&e.type)||e)); });
     NET.peer.on("connection",conn=>{ NET.conns.push(conn); conn.on("data",d=>hostOnData(conn,d)); conn.on("close",()=>{ NET.conns=NET.conns.filter(c=>c!==conn); NET.parts=NET.parts.filter(p=>p.peer!==conn.peer); delete NET.roles[conn.peer]; hostSyncLobby(); }); }); }); }
-function hostOnData(conn,d){ if(!d) return; if(d.t==="hello"){ if(!NET.parts.find(p=>p.peer===conn.peer)){ NET.parts.push({peer:conn.peer,name:d.name||"プレイヤー"}); NET.roles[conn.peer]="spec"; NET.decks[conn.peer]=d.deck||null; } NET.mats[conn.peer]=d.mat||{img:"",adj:null}; hostSyncLobby(); } else if(d.t==="matUpdate"){ NET.mats[conn.peer]=d.mat||{img:"",adj:null}; hostBroadcastMats(); } else if(d.t==="resp"){ hostApplyResp(conn,d); } else if(d.t==="in"){ hostApplyIn(conn,d); } }
+function hostOnData(conn,d){ if(!d) return; if(d.t==="hello"){ if(!NET.parts.find(p=>p.peer===conn.peer)){ NET.parts.push({peer:conn.peer,name:d.name||"プレイヤー"}); NET.roles[conn.peer]="spec"; NET.decks[conn.peer]=d.deck||null; } NET.mats[conn.peer]=d.mat||{img:"",adj:null}; hostSyncLobby(); } else if(d.t==="matUpdate"){ NET.mats[conn.peer]=d.mat||{img:"",adj:null}; hostBroadcastMats(); } else if(d.t==="resp"){ hostApplyResp(conn,d); } else if(d.t==="in"){ hostApplyIn(conn,d); } else if(d.t==="url"){ if(d.url) UrlAudio.play(d.url,true); else UrlAudio.stop(); NET.conns.forEach(c=>{ if(c.open&&c!==conn) try{c.send(d);}catch(e){} }); } }
 function joinRoom(code){ ensurePeerLib(()=>{ try{ NET.peer=new Peer(); }catch(e){ netLog("接続失敗"); return; } NET.isHost=false; NET.code=code;
     NET.peer.on("open",()=>{ const conn=NET.peer.connect(code,{reliable:true}); NET.conns=[conn];
       conn.on("open",()=>{ netLog("参加しました。オーナーの開始をお待ちください。"); try{ conn.send({t:"hello",name:(PLAYER_NAME||"プレイヤー"),deck:getActiveDeck(),mat:{img:MY_MAT,adj:MY_MAT_ADJ}}); }catch(e){} showLobby(); });
@@ -1367,8 +1387,9 @@ function clientOnData(d){ if(!d) return;
   if(d.t==="lobby"){ NET.code=d.code; NET.parts=d.parts||[]; NET.roles=d.roles||{}; NET.seat=mySeatFromRoles(); renderLobby(); }
   else if(d.t==="start"){ NET.active=true; NET.seat=mySeatFromRoles(); $("roomTag").textContent="ROOM "+NET.code; showScreen("Game"); netApplyState(d.snap); }
   else if(d.t==="state"){ NET.active=true; if(!NET.seat) NET.seat=mySeatFromRoles(); netApplyState(d.snap); }
+  else if(d.t==="url"){ if(d.url) UrlAudio.play(d.url,true); else UrlAudio.stop(); }
   else if(d.t==="mats"){ NET.seatMats=d.mats||{self:{img:"",adj:null},opp:{img:"",adj:null}}; applyMats(); }
-  else if(d.t==="special"){ showSpecialCard(d.card); }
+  else if(d.t==="special"){ showSpecialCard(d.card,d.label); }
   else if(d.t==="prompt"){ clientShowPrompt(d.ui); }
   else if(d.t==="clearPrompt"){ NET.clientPrompt=null; render(); } }
 function hostStartGame(){ if(!NET.isHost) return; const aPeer=Object.keys(NET.roles).find(k=>NET.roles[k]==="A"); const bPeer=Object.keys(NET.roles).find(k=>NET.roles[k]==="B"); if(!aPeer||!bPeer){ netLog("対戦者A/Bを割り当ててください"); return; }
@@ -1481,7 +1502,7 @@ $("codeCopy").onclick=()=>copyText(encodeDeck(draft),"コードをコピーし�
 $("urlCopy").onclick=()=>copyText(location.origin+location.pathname+"?d="+encodeDeck(draft),"URLをコピーしました");
 function copyText(t,msg){ (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>alert(msg)).catch(()=>prompt("コピーしてください",t)); }
 $("imgInput").onchange=e=>{ const files=[...e.target.files]; if(!files.length) return; let done=0;
-  files.forEach((f,i)=>{const r=new FileReader();r.onload=()=>{ if(CARD_POOL[i])CARD_POOL[i].img=r.result; USE_IMG=true; if(++done===files.length){ renderDeckBuilder(); } };r.readAsDataURL(f);}); };
+  files.forEach((f,idx)=>{const r=new FileReader();r.onload=()=>{ const m=/card[_-]?0*(\d+)/i.exec(f.name||""); if(m){ const id=parseInt(m[1],10); const card=CARD_POOL.find(c=>c.cardId===id); if(card) card.img=r.result; } else if(CARD_POOL[idx]) CARD_POOL[idx].img=r.result; USE_IMG=true; if(++done===files.length){ renderDeckBuilder(); if(state) render(); } };r.readAsDataURL(f);}); };
 
 /* 対戦画面 */
 $("endBtn").onclick=endTurn;
